@@ -59,6 +59,7 @@ import android.content.IntentFilter
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -69,10 +70,8 @@ fun WeatherScreen(viewModel: WeatherViewModel) {
     val uiState by viewModel.uiState.observeAsState(WeatherUiState.Loading)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Selalu tampilkan latar belakang
         BackgroundImage()
 
-        // Konten di atas latar belakang
         when (uiState) {
             is WeatherUiState.Loading -> LoadingIndicator()
             is WeatherUiState.Error -> ErrorMessage((uiState as WeatherUiState.Error).message)
@@ -176,44 +175,59 @@ fun TransparentWeatherCard(weatherData: WeatherResponse) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(4.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .padding(16.dp)
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Current Date and Time
+            CurrentDateTime()
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Temperature and Feels Like
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CurrentDateTime()
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = weatherData.current.condition.text,
-                        fontSize = 16.sp,
-                        color = Color.White
-                    )
-                    AsyncImage(
-                        model = "https:${weatherData.current.condition.icon}",
-                        contentDescription = "Weather Icon",
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
+                Text(
+                    text = "${weatherData.current.tempC}°C",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "Terasa ${weatherData.current.feelslikeC}°C",
+                    fontSize = 14.sp,
+                    fontStyle = FontStyle.Italic,
+                    color = Color.White
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "${weatherData.current.tempC}°C",
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                color = Color.White
-            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Weather Icon and Condition
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                AsyncImage(
+                    model = "https:${weatherData.current.condition.icon}",
+                    contentDescription = "Weather Icon",
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = weatherData.current.condition.text,
+                    fontSize = 14.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
