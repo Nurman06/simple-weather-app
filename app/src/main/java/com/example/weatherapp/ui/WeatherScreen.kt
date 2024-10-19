@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +35,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -46,23 +49,16 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.example.weatherapp.R
 import com.example.weatherapp.data.remote.response.WeatherResponse
-import java.util.Locale
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
-import android.content.IntentFilter
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.style.TextAlign
+import com.example.weatherapp.model.WeatherDetailItem
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -148,8 +144,8 @@ fun ErrorMessage(error: String) {
 fun WeatherContent(weatherData: WeatherResponse) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxSize() // Ensure the Column takes the full size
+            .padding(16.dp), // Padding around the column
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         RunningText(
@@ -159,139 +155,174 @@ fun WeatherContent(weatherData: WeatherResponse) {
             color = Color.White
         )
         Spacer(modifier = Modifier.height(8.dp))
-        TransparentWeatherCard(weatherData)
+
+        // WeatherInfoCard should fill the width of the Column
+        WeatherInfoCard(weatherData)
+
         Spacer(modifier = Modifier.height(16.dp))
-        DailyTemperatureRange(
-            maxTempC = weatherData.forecast.forecastday[0].day.maxtempC,
-            minTempC = weatherData.forecast.forecastday[0].day.mintempC,
-            feelsLikeC = weatherData.current.feelslikeC
-        )
+
+        // Weather details row
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(getWeatherDetailItems(weatherData)) { item ->
+                WeatherDetailCard(item)
+            }
+        }
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TransparentWeatherCard(weatherData: WeatherResponse) {
+fun WeatherInfoCard(weatherData: WeatherResponse) {
+    val currentDate = LocalDateTime.now()
+    val locale = Locale("id", "ID")
+
+    val day = currentDate.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale)
+    val date = currentDate.dayOfMonth
+    val month = currentDate.month.getDisplayName(java.time.format.TextStyle.SHORT, locale)
+    val hour = currentDate.hour
+    val minute = currentDate.minute
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(4.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f))
+            .padding(0.dp)
+            .clip(RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Current Date and Time
-            CurrentDateTime()
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Temperature and Feels Like
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Row for Temperature, Date, Day, Month, and Weather Icon
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Left: Date, Day, Month
+                Column {
+                    Text(
+                        text = "$day, $date $month",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = String.format(locale, "%02d:%02d", hour, minute), // Specify Locale here
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+
+                // Center: Current Temperature (increased font size)
                 Text(
                     text = "${weatherData.current.tempC}°C",
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "Terasa ${weatherData.current.feelslikeC}°C",
-                    fontSize = 14.sp,
-                    fontStyle = FontStyle.Italic,
-                    color = Color.White
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Weather Icon and Condition
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f)
-            ) {
-                AsyncImage(
-                    model = "https:${weatherData.current.condition.icon}",
-                    contentDescription = "Weather Icon",
-                    modifier = Modifier.size(48.dp)
-                )
-                Text(
-                    text = weatherData.current.condition.text,
-                    fontSize = 14.sp,
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    fontSize = 28.sp, // Increased font size
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.CenterVertically)
                 )
+
+                // Right: Weather Icon with Condition Text below
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally // Center the icon and text
+                ) {
+                    val iconUrl = "https:${weatherData.current.condition.icon}"
+                    Image(
+                        painter = rememberAsyncImagePainter(iconUrl),
+                        contentDescription = "Weather Icon",
+                        modifier = Modifier.size(48.dp)
+                    )
+
+                    // Weather Condition Text below the icon
+                    Text(
+                        text = weatherData.current.condition.text,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(8.dp)) // Space below the row
+
+            // New Text fields for additional information
+            Text(
+                text = "Terasa seperti ${weatherData.current.feelslikeC}°C",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal
+            )
+            Text(
+                text = "Tinggi: ${weatherData.forecast.forecastday[0].day.maxtempC}°C ~ Rendah: ${weatherData.forecast.forecastday[0].day.mintempC}°C",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal
+            )
+            Text(
+                text = "Angin: ${weatherData.current.windDir}, ${weatherData.current.windKph} km/h",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal
+            )
         }
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun CurrentDateTime() {
-    val context = LocalContext.current
-    val currentDateTime = remember { mutableStateOf(LocalDateTime.now()) }
-    val dateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale("id", "ID"))
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-
-    DisposableEffect(context) {
-        val intentFilter = IntentFilter().apply {
-            addAction(Intent.ACTION_TIME_TICK)
-            addAction(Intent.ACTION_TIME_CHANGED)
-            addAction(Intent.ACTION_TIMEZONE_CHANGED)
-        }
-
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                currentDateTime.value = LocalDateTime.now()
-            }
-        }
-
-        context.registerReceiver(receiver, intentFilter)
-
-        onDispose {
-            context.unregisterReceiver(receiver)
-        }
-    }
-
-    Column {
-        Text(
-            text = currentDateTime.value.format(dateFormatter).capitalize(),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.White
-        )
-        Text(
-            text = currentDateTime.value.format(timeFormatter),
-            fontSize = 14.sp,
-            color = Color.White
-        )
-    }
-}
-
-fun String.capitalize(): String {
-    return this.split(" ").joinToString(" ") { word ->
-        word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 }
 
 @Composable
-fun DailyTemperatureRange(maxTempC: Any, minTempC: Any, feelsLikeC: Any) {
-    Text(
-        text = "Day $maxTempC°C / Night $minTempC°C",
-        fontSize = 16.sp,
-        color = Color.White
-    )
-    Text(
-        text = "Feels like $feelsLikeC°C",
-        fontSize = 16.sp,
-        color = Color.White
+fun WeatherDetailCard(item: WeatherDetailItem) {
+    Card(
+        modifier = Modifier
+            .size(120.dp, 100.dp)
+            .padding(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(item.iconUrl),
+                contentDescription = item.title,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = item.value,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = item.title,
+                color = Color.White,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+fun getWeatherDetailItems(weatherData: WeatherResponse): List<WeatherDetailItem> {
+    val baseIconUrl = "https:" // WeatherAPI.com icons start with //
+    val defaultIcon = "${baseIconUrl}${weatherData.current.condition.icon}" // Use the current condition icon as default
+
+    return listOf(
+        WeatherDetailItem("Kelembapan", "${weatherData.current.humidity}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/143.png"), // Mist icon for humidity
+        WeatherDetailItem("Titik Embun", "${weatherData.current.dewpointC}°C", defaultIcon),
+        WeatherDetailItem("Indeks UV", weatherData.current.uv.toString(), "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/113.png"), // Sunny icon for UV index
+        WeatherDetailItem("Visibilitas", "${weatherData.current.visKm} km", defaultIcon),
+        WeatherDetailItem("Tutupan Awan", "${weatherData.current.cloud}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/119.png"), // Cloudy icon for cloud coverage
+        WeatherDetailItem("Tekanan", "${weatherData.current.pressureMb} mb", defaultIcon)
     )
 }
 
