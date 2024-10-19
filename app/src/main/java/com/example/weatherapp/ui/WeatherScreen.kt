@@ -262,7 +262,9 @@ fun CurrentDateTime() {
 }
 
 fun String.capitalize(): String {
-    return this.split(" ").joinToString(" ") { it.capitalize(Locale.getDefault()) }
+    return this.split(" ").joinToString(" ") { word ->
+        word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+    }
 }
 
 @Composable
