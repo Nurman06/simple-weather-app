@@ -55,9 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.weatherapp.R
+import com.example.weatherapp.data.remote.response.HourItem
 import com.example.weatherapp.data.remote.response.WeatherResponse
 import com.example.weatherapp.model.WeatherDetailItem
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -170,6 +172,10 @@ fun WeatherContent(weatherData: WeatherResponse) {
                 WeatherDetailCard(item)
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        HourlyForecastCard(weatherData)
     }
 }
 
@@ -197,81 +203,92 @@ fun WeatherInfoCard(weatherData: WeatherResponse) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Row for Temperature, Date, Day, Month, and Weather Icon
+            // Date and Time
+            Text(
+                text = "$day, $date $month",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = String.format(locale, "%02d:%02d", hour, minute),
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Temperature and Weather Icon
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Date, Day, Month
-                Column {
-                    Text(
-                        text = "$day, $date $month",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = String.format(locale, "%02d:%02d", hour, minute), // Specify Locale here
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Normal
-                    )
-                }
-
-                // Center: Current Temperature (increased font size)
+                // Temperature
                 Text(
                     text = "${weatherData.current.tempC}°C",
                     color = Color.White,
-                    fontSize = 28.sp, // Increased font size
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.CenterVertically)
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold
                 )
 
-                // Right: Weather Icon with Condition Text below
+                // Weather Icon and Condition
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally // Center the icon and text
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val iconUrl = "https:${weatherData.current.condition.icon}"
                     Image(
                         painter = rememberAsyncImagePainter(iconUrl),
                         contentDescription = "Weather Icon",
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(64.dp)
                     )
-
-                    // Weather Condition Text below the icon
                     Text(
                         text = weatherData.current.condition.text,
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Normal,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        textAlign = TextAlign.Center
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp)) // Space below the row
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // New Text fields for additional information
-            Text(
-                text = "Terasa seperti ${weatherData.current.feelslikeC}°C",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
-            Text(
-                text = "Tinggi: ${weatherData.forecast.forecastday[0].day.maxtempC}°C ~ Rendah: ${weatherData.forecast.forecastday[0].day.mintempC}°C",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
-            Text(
-                text = "Angin: ${weatherData.current.windDir}, ${weatherData.current.windKph} km/h",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Normal
-            )
+            // Additional Weather Information
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                WeatherInfoRow("Terasa seperti", "${weatherData.current.feelslikeC}°C")
+                WeatherInfoRow("Tinggi", "${weatherData.forecast.forecastday[0].day.maxtempC}°C")
+                WeatherInfoRow("Rendah", "${weatherData.forecast.forecastday[0].day.mintempC}°C")
+                WeatherInfoRow("Angin", "${weatherData.current.windDir}, ${weatherData.current.windKph} km/h")
+            }
         }
+    }
+}
+
+@Composable
+fun WeatherInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Normal
+        )
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -324,6 +341,106 @@ fun getWeatherDetailItems(weatherData: WeatherResponse): List<WeatherDetailItem>
         WeatherDetailItem("Tutupan Awan", "${weatherData.current.cloud}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/119.png"), // Cloudy icon for cloud coverage
         WeatherDetailItem("Tekanan", "${weatherData.current.pressureMb} mb", defaultIcon)
     )
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun getNext24Hours(weatherData: WeatherResponse): List<HourItem> {
+    val currentTime = LocalDateTime.now()
+    val startHour = currentTime.plusHours(1).withMinute(0).withSecond(0).withNano(0)
+    val endHour = startHour.plusHours(23) // 23 jam setelah startHour untuk total 24 jam termasuk startHour
+
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+    val allHours = weatherData.forecast.forecastday.flatMap { it.hour }
+
+    return allHours.filter { hourItem ->
+        val itemTime = LocalDateTime.parse(hourItem.time, formatter)
+        itemTime in startHour..endHour
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun HourlyForecastCard(weatherData: WeatherResponse) {
+    val next24Hours = remember { getNext24Hours(weatherData) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .height(200.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxSize()
+        ) {
+            Text(
+                text = "Prakiraan 24 Jam Ke Depan",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(next24Hours) { hourData ->
+                    HourlyForecastItem(hourData)
+                }
+            }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun HourlyForecastItem(hourData: HourItem) {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    val itemTime = LocalDateTime.parse(hourData.time, formatter)
+    val timeText = itemTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+    val rainIconUrl = "https://cdn.weatherapi.com/weather/64x64/day/302.png" // Ikon awan dengan hujan
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(60.dp)
+    ) {
+        Text(
+            text = timeText,
+            color = Color.White,
+            fontSize = 12.sp
+        )
+        Image(
+            painter = rememberAsyncImagePainter("https:${hourData.condition.icon}"),
+            contentDescription = hourData.condition.text,
+            modifier = Modifier.size(40.dp)
+        )
+        Text(
+            text = "${hourData.tempC}°C",
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(rainIconUrl),
+                contentDescription = "Chance of rain",
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "${hourData.chanceOfRain}%",
+                color = Color.Cyan,
+                fontSize = 12.sp
+            )
+        }
+    }
 }
 
 @Composable
