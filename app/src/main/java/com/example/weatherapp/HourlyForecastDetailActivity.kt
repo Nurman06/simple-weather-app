@@ -7,10 +7,14 @@ import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,21 +25,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.weatherapp.data.remote.response.HourItem
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import java.time.LocalDateTime
-import androidx.compose.foundation.layout.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.style.TextAlign
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class HourlyForecastDetailActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -68,9 +71,9 @@ class HourlyForecastDetailActivity : ComponentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun HourlyForecastList(hourlyData: Array<HourItem>) {
-        // Implementasikan LazyColumn untuk menampilkan data per jam
         LazyColumn {
             items(hourlyData) { hourItem ->
                 HourlyForecastCard(hourItem)
@@ -78,6 +81,7 @@ class HourlyForecastDetailActivity : ComponentActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @Composable
     fun HourlyForecastCard(hourItem: HourItem) {
         Card(
@@ -92,7 +96,6 @@ class HourlyForecastDetailActivity : ComponentActivity() {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                // Date and time row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -100,12 +103,12 @@ class HourlyForecastDetailActivity : ComponentActivity() {
                 ) {
                     Column {
                         Text(
-                            text = formatTime(hourItem.time),
+                            text = formatDate(hourItem.time),
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White
                         )
                         Text(
-                            text = hourItem.time.substring(11, 16), // Extract HH:mm
+                            text = formatTime(hourItem.time),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White
                         )
@@ -119,13 +122,11 @@ class HourlyForecastDetailActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Weather info row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left: Icon and condition
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -142,7 +143,6 @@ class HourlyForecastDetailActivity : ComponentActivity() {
                         )
                     }
 
-                    // Right: Weather details
                     Column(
                         horizontalAlignment = Alignment.End
                     ) {
@@ -172,17 +172,18 @@ class HourlyForecastDetailActivity : ComponentActivity() {
         }
     }
 
-    private fun formatTime(timeString: String): String {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        val outputFormat = SimpleDateFormat("EEE, d MMM", Locale("id", "ID"))
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun formatDate(timeString: String): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val dateTime = LocalDateTime.parse(timeString, formatter)
+        return dateTime.format(DateTimeFormatter.ofPattern("EEE, d MMM", Locale("id", "ID")))
+    }
 
-        return try {
-            val date = inputFormat.parse(timeString)
-            outputFormat.format(date as Date)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            timeString
-        }
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun formatTime(timeString: String): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val dateTime = LocalDateTime.parse(timeString, formatter)
+        return dateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

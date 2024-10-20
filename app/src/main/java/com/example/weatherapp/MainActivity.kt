@@ -20,11 +20,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import com.example.weatherapp.data.remote.response.HourItem
+import com.example.weatherapp.data.remote.response.WeatherResponse
 import com.example.weatherapp.ui.WeatherScreen
 import com.example.weatherapp.ui.WeatherUiState
 import com.example.weatherapp.ui.WeatherViewModel
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.google.android.gms.location.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
 
@@ -85,18 +89,33 @@ class MainActivity : ComponentActivity() {
         requestLocationPermission()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun navigateToHourlyForecastDetail() {
-        // Periksa apakah uiState adalah Success
         val currentState = viewModel.uiState.value
         if (currentState is WeatherUiState.Success) {
-            val hourlyData = currentState.data.forecast.forecastday[0].hour.toTypedArray()
+            val next24Hours = getNext24Hours(currentState.data)
             val intent = Intent(this, HourlyForecastDetailActivity::class.java).apply {
-                putExtra("hourly_data", hourlyData)
+                putExtra("hourly_data", next24Hours.toTypedArray())
             }
             startActivity(intent)
         } else {
-            // Tangani keadaan jika data belum dimuat atau terjadi kesalahan
-            // Misalnya, bisa menampilkan pesan kesalahan atau loading
+            // Handle error state
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getNext24Hours(weatherData: WeatherResponse): List<HourItem> {
+        val currentTime = LocalDateTime.now()
+        val startHour = currentTime.plusHours(1).withMinute(0).withSecond(0).withNano(0)
+        val endHour = startHour.plusHours(23)
+
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+        val allHours = weatherData.forecast.forecastday.flatMap { it.hour }
+
+        return allHours.filter { hourItem ->
+            val itemTime = LocalDateTime.parse(hourItem.time, formatter)
+            itemTime in startHour..endHour
         }
     }
 

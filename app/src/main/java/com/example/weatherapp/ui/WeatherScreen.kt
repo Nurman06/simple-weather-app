@@ -58,7 +58,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.weatherapp.R
 import com.example.weatherapp.data.remote.response.HourItem
 import com.example.weatherapp.data.remote.response.WeatherResponse
-import com.example.weatherapp.model.WeatherDetailItem
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -292,7 +291,7 @@ fun WeatherInfoRow(label: String, value: String) {
 }
 
 @Composable
-fun WeatherDetailCard(item: WeatherDetailItem) {
+fun WeatherDetailCard(item: Triple<String, String, String>) {
     Card(
         modifier = Modifier
             .size(120.dp, 100.dp)
@@ -308,19 +307,19 @@ fun WeatherDetailCard(item: WeatherDetailItem) {
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter = rememberAsyncImagePainter(item.iconUrl),
-                contentDescription = item.title,
+                painter = rememberAsyncImagePainter(item.third),
+                contentDescription = item.first,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = item.value,
+                text = item.second,
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = item.title,
+                text = item.first,
                 color = Color.White,
                 fontSize = 12.sp
             )
@@ -328,17 +327,17 @@ fun WeatherDetailCard(item: WeatherDetailItem) {
     }
 }
 
-fun getWeatherDetailItems(weatherData: WeatherResponse): List<WeatherDetailItem> {
+fun getWeatherDetailItems(weatherData: WeatherResponse): List<Triple<String, String, String>> {
     val baseIconUrl = "https:" // WeatherAPI.com icons start with //
     val defaultIcon = "${baseIconUrl}${weatherData.current.condition.icon}" // Use the current condition icon as default
 
     return listOf(
-        WeatherDetailItem("Kelembapan", "${weatherData.current.humidity}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/143.png"), // Mist icon for humidity
-        WeatherDetailItem("Titik Embun", "${weatherData.current.dewpointC}°C", defaultIcon),
-        WeatherDetailItem("Indeks UV", weatherData.current.uv.toString(), "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/113.png"), // Sunny icon for UV index
-        WeatherDetailItem("Visibilitas", "${weatherData.current.visKm} km", defaultIcon),
-        WeatherDetailItem("Tutupan Awan", "${weatherData.current.cloud}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/119.png"), // Cloudy icon for cloud coverage
-        WeatherDetailItem("Tekanan", "${weatherData.current.pressureMb} mb", defaultIcon)
+        createWeatherDetailItem("Kelembapan", "${weatherData.current.humidity}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/143.png"),
+        createWeatherDetailItem("Titik Embun", "${weatherData.current.dewpointC}°C", defaultIcon),
+        createWeatherDetailItem("Indeks UV", weatherData.current.uv.toString(), "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/113.png"),
+        createWeatherDetailItem("Visibilitas", "${weatherData.current.visKm} km", defaultIcon),
+        createWeatherDetailItem("Tutupan Awan", "${weatherData.current.cloud}%", "${baseIconUrl}//cdn.weatherapi.com/weather/64x64/day/119.png"),
+        createWeatherDetailItem("Tekanan", "${weatherData.current.pressureMb} mb", defaultIcon)
     )
 }
 
@@ -537,4 +536,8 @@ fun getBackgroundImage(): Int {
         in 0..5 -> R.drawable.early_morning
         else -> R.drawable.night_clear
     }
+}
+
+fun createWeatherDetailItem(title: String, value: String, iconUrl: String): Triple<String, String, String> {
+    return Triple(title, value, iconUrl)
 }
