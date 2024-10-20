@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,7 +65,7 @@ import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun WeatherScreen(viewModel: WeatherViewModel) {
+fun WeatherScreen(viewModel: WeatherViewModel, onMoreClick: () -> Unit) {
     val uiState by viewModel.uiState.observeAsState(WeatherUiState.Loading)
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -75,7 +76,7 @@ fun WeatherScreen(viewModel: WeatherViewModel) {
             is WeatherUiState.Error -> ErrorMessage((uiState as WeatherUiState.Error).message)
             is WeatherUiState.Success -> {
                 val weatherData = (uiState as WeatherUiState.Success).data
-                WeatherContent(weatherData)
+                WeatherContent(weatherData, onMoreClick)
             }
         }
     }
@@ -143,11 +144,11 @@ fun ErrorMessage(error: String) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun WeatherContent(weatherData: WeatherResponse) {
+fun WeatherContent(weatherData: WeatherResponse, onMoreClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxSize() // Ensure the Column takes the full size
-            .padding(16.dp), // Padding around the column
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         RunningText(
@@ -158,12 +159,10 @@ fun WeatherContent(weatherData: WeatherResponse) {
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        // WeatherInfoCard should fill the width of the Column
         WeatherInfoCard(weatherData)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Weather details row
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -175,7 +174,7 @@ fun WeatherContent(weatherData: WeatherResponse) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        HourlyForecastCard(weatherData)
+        HourlyForecastCard(weatherData, onMoreClick)
     }
 }
 
@@ -361,7 +360,7 @@ fun getNext24Hours(weatherData: WeatherResponse): List<HourItem> {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HourlyForecastCard(weatherData: WeatherResponse) {
+fun HourlyForecastCard(weatherData: WeatherResponse, onMoreClick: () -> Unit) {
     val next24Hours = remember { getNext24Hours(weatherData) }
 
     Card(
@@ -372,25 +371,39 @@ fun HourlyForecastCard(weatherData: WeatherResponse) {
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.2f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxSize()
-        ) {
-            Text(
-                text = "Prakiraan 24 Jam Ke Depan",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxSize()
             ) {
-                items(next24Hours) { hourData ->
-                    HourlyForecastItem(hourData)
+                Text(
+                    text = "Prakiraan 24 Jam Ke Depan",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(next24Hours) { hourData ->
+                        HourlyForecastItem(hourData)
+                    }
                 }
             }
+
+            Text(
+                text = "Lebih",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .clickable { onMoreClick() }
+            )
         }
     }
 }

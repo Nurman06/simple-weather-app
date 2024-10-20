@@ -1,6 +1,7 @@
 package com.example.weatherapp.data.remote.response
 
 import com.google.gson.annotations.SerializedName
+import java.io.Serializable
 
 data class WeatherResponse(
 
@@ -15,7 +16,6 @@ data class WeatherResponse(
 )
 
 data class HourItem(
-
 	@field:SerializedName("feelslike_c")
 	val feelslikeC: Double,
 
@@ -26,16 +26,16 @@ data class HourItem(
 	val windDegree: Int,
 
 	@field:SerializedName("windchill_f")
-	val windchillF: Any,
+	val windchillF: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("windchill_c")
-	val windchillC: Any,
+	val windchillC: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("temp_c")
-	val tempC: Any,
+	val tempC: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("temp_f")
-	val tempF: Any,
+	val tempF: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("cloud")
 	val cloud: Int,
@@ -53,7 +53,7 @@ data class HourItem(
 	val humidity: Int,
 
 	@field:SerializedName("dewpoint_f")
-	val dewpointF: Any,
+	val dewpointF: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("will_it_rain")
 	val willItRain: Int,
@@ -62,10 +62,10 @@ data class HourItem(
 	val uv: Double,
 
 	@field:SerializedName("heatindex_f")
-	val heatindexF: Any,
+	val heatindexF: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("dewpoint_c")
-	val dewpointC: Any,
+	val dewpointC: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("is_day")
 	val isDay: Int,
@@ -74,7 +74,7 @@ data class HourItem(
 	val precipIn: Double,
 
 	@field:SerializedName("heatindex_c")
-	val heatindexC: Any,
+	val heatindexC: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("wind_dir")
 	val windDir: String,
@@ -83,7 +83,7 @@ data class HourItem(
 	val gustMph: Double,
 
 	@field:SerializedName("pressure_in")
-	val pressureIn: Any,
+	val pressureIn: Double?, // Ubah ke Double? jika bisa null
 
 	@field:SerializedName("chance_of_rain")
 	val chanceOfRain: Int,
@@ -117,7 +117,7 @@ data class HourItem(
 
 	@field:SerializedName("vis_miles")
 	val visMiles: Double
-)
+) : Serializable
 
 data class Condition(
 
@@ -129,7 +129,7 @@ data class Condition(
 
 	@field:SerializedName("text")
 	val text: String
-)
+) : Serializable
 
 data class Current(
 

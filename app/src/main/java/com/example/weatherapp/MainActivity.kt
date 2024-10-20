@@ -1,6 +1,7 @@
 package com.example.weatherapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.example.weatherapp.ui.WeatherScreen
+import com.example.weatherapp.ui.WeatherUiState
 import com.example.weatherapp.ui.WeatherViewModel
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.google.android.gms.location.*
@@ -51,7 +53,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    WeatherScreen(viewModel)
+                    WeatherScreen(viewModel) { navigateToHourlyForecastDetail() }
 
                     if (showPermissionDialog.value) {
                         AlertDialog(
@@ -81,6 +83,21 @@ class MainActivity : ComponentActivity() {
         }
 
         requestLocationPermission()
+    }
+
+    private fun navigateToHourlyForecastDetail() {
+        // Periksa apakah uiState adalah Success
+        val currentState = viewModel.uiState.value
+        if (currentState is WeatherUiState.Success) {
+            val hourlyData = currentState.data.forecast.forecastday[0].hour.toTypedArray()
+            val intent = Intent(this, HourlyForecastDetailActivity::class.java).apply {
+                putExtra("hourly_data", hourlyData)
+            }
+            startActivity(intent)
+        } else {
+            // Tangani keadaan jika data belum dimuat atau terjadi kesalahan
+            // Misalnya, bisa menampilkan pesan kesalahan atau loading
+        }
     }
 
     override fun onResume() {
