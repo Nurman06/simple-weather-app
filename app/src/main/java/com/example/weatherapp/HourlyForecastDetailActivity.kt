@@ -146,30 +146,29 @@ class HourlyForecastDetailActivity : ComponentActivity() {
                     Column(
                         horizontalAlignment = Alignment.End
                     ) {
-                        Text(
-                            text = "Hujan: ${hourItem.chanceOfRain}%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Kelembapan: ${hourItem.humidity}%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Angin: ${hourItem.windKph} km/h",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Visibilitas: ${hourItem.visKm} km",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
+                        WeatherInfoText("Hujan", "${hourItem.chanceOfRain}%")
+                        WeatherInfoText("Kelembapan", "${hourItem.humidity}%")
+                        WeatherInfoText("Angin", "${hourItem.windKph} km/h")
+                        WeatherInfoText("Visibilitas", "${hourItem.visKm} km")
+                        WeatherInfoText("Pengendapan", "${hourItem.precipMm} mm")
+                        WeatherInfoText("Titik embun", "${hourItem.dewpointC}°C")
+                        WeatherInfoText("Salju", "${hourItem.snowCm} cm")
+                        WeatherInfoText("Arah angin", hourItem.windDir)
+                        WeatherInfoText("Tutupan awan", "${hourItem.cloud}%")
+                        WeatherInfoText("Indeks UV", hourItem.uv.toString())
                     }
                 }
             }
         }
+    }
+
+    @Composable
+    fun WeatherInfoText(label: String, value: String) {
+        Text(
+            text = "$label: $value",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

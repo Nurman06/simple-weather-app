@@ -22,7 +22,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 val response = ApiConfig.getApiService().getHourlyWeather(
                     apiKey = "6050a955c1c148458d9120239241710",
                     location = "${location.latitude},${location.longitude}",
-                    days = 2
+                    days = 7
                 )
                 _uiState.value = WeatherUiState.Success(response)
             } catch (e: Exception) {
